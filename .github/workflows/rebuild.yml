@@ -114,8 +114,9 @@ jobs:
           exit_code = 1 if any(r['result'] is False or r['result'] is None for r in results) else 0
 
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              print(f"exit_code={exit_code}", file=f)
-              print(f"summary={summary_plain}", file=f)
+              f.write(f"exit_code={exit_code}\n")
+              escaped_summary = summary_plain.replace('\n', '%0A')
+              f.write(f"summary={escaped_summary}\n")
 
           if exit_code != 0:
               exit(1)
@@ -129,6 +130,9 @@ jobs:
           mkdir -p docs
           export TZ=Asia/Shanghai
           START_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+          SUMMARY="${{ steps.rebuild.outputs.summary }}"
+          SUMMARY="${SUMMARY//'%0A'/$'\n'}"
+          
           cat > docs/build_log_$(date '+%Y%m%d').html << EOF
           <!DOCTYPE html>
           <html lang="zh-CN">
@@ -195,6 +199,8 @@ jobs:
                       padding: 15px;
                       border-radius: 5px;
                       overflow-x: auto;
+                      white-space: pre-wrap;
+                      word-wrap: break-word;
                   }
               </style>
           </head>
@@ -206,7 +212,7 @@ jobs:
                       <p><strong>触发事件:</strong> ${GITHUB_EVENT_NAME}</p>
                       <p><strong>工作流程:</strong> <a href="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" target="_blank">查看详情</a></p>
                       <p><strong>构建结果:</strong></p>
-                      <pre>${{ steps.rebuild.outputs.summary }}</pre>
+                      <pre>${SUMMARY}</pre>
                   </div>
                   <div class="footer">
                       <p><a href="https://linux.do" target="_blank">LINUX DO</a></p>
